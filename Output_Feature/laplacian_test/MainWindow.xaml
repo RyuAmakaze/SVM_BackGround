@@ -1,0 +1,22 @@
+﻿<Window x:Class="laplacian_test.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:laplacian_test"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+
+        <ScrollViewer Margin="10,10,52,50">
+            <StackPanel Width="708">
+                <Image x:Name="inference_image1" Height="263" Margin="10,4"/>
+                <Image x:Name="inference_image2" Height="269" Margin="10,4"/>
+                <Image x:Name="inference_image3" Height="269" Margin="10,4"/>
+                <Image x:Name="inference_image4" Height="269" Margin="10,4"/>
+                <Image x:Name="inference_image5" Height="269" Margin="10,4"/>
+            </StackPanel>
+        </ScrollViewer>
+        <Image x:Name="inference_image" Stretch="Uniform" Height="180" Width="474" />
+    </Grid>
+</Window>
