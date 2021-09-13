@@ -1,21 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using OpenCvSharp;
+using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using OpenCvSharp;
-using OpenCvSharp.Extensions;
-using System.Linq;
 
 
 namespace laplacian_test
@@ -38,8 +27,6 @@ namespace laplacian_test
         public int x_step = 64;
         public int y_step = 32;
 
-        string[] folder = new string[] { "badbackground_toodark", "badbackground_toolight", "goodbackground" };
-
         public MainWindow()
         {
             //isback_forSVM();
@@ -54,7 +41,7 @@ namespace laplacian_test
         //SVM解析用の画像特徴量をクラスラベル，特徴量1,特徴量2の順でcsvに入れるコード．
         public void isback_forSVM()
         {
-            
+
             string path = "D:/grameye/背景判定用/isgoodbackground_kaiseki/";
             //Yamaoka_PCでの画像ファイルを入れる場所のPath,ディレクトリ構造
             //isgoodbackground_kaiseki
@@ -66,30 +53,32 @@ namespace laplacian_test
             string[] folders = System.IO.Directory.GetDirectories(path, "*", System.IO.SearchOption.AllDirectories);
 
             //SVM用の特徴量を格納するcsv
-            StreamWriter csv_file = new StreamWriter(path + "/Feature_SVM3.csv", false, Encoding.UTF8);
+            StreamWriter csv_file = new StreamWriter(path + "/Feature_SVM.csv", false, Encoding.UTF8);
 
             foreach (String folder in folders)
             {
                 //良い背景はクラス0，濃すぎるは1，薄すぎる背景は-1
                 int class_label = 2;
-                System.Diagnostics.Debug.WriteLine(folder);
+                Debug.WriteLine(folder);
                 if (folder == path + "goodbackground")
                 {
                     class_label = 0;
                 }
-                else if(folder == path + "badbackground_toodark")
+                else if (folder == path + "badbackground_toodark")
                 {
                     class_label = 1;
                 }
                 else if (folder == path + "badbackground_toolight")
                 {
-                    class_label = -1;
+                    class_label = 1;
                 }
 
                 string[] files = System.IO.Directory.GetFiles(folder, "*.png", System.IO.SearchOption.AllDirectories);//各フォルダの全画像にアクセス．
+                Debug.WriteLine(folder.Replace(path,"") + "は" +  files.Length + "つのファイルで構成");
                 foreach (String file in files)
                 {
                     ViewSearchState.AppendText("\n" + file);
+                    Debug.WriteLine(file);
 
                     double[] Feature_value = for_SVM(file);
 
@@ -97,181 +86,96 @@ namespace laplacian_test
                     //Feature_value[Feature_value.Length - 1] = class_label;
 
                     //csv_file.WriteLine(Feature_value);
-                    csv_file.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}", class_label, Feature_value[1], Feature_value[2], Feature_value[3], Feature_value[4], Feature_value[5], Feature_value[6], Feature_value[7], Feature_value[8], Feature_value[9], Feature_value[10], Feature_value[11], Feature_value[12]);
+                    //後日書き直し．
+                    csv_file.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25},{26},{27},{28},{29},{30},{31},{32},{33},{34},{35},{36}", class_label, Feature_value[1], Feature_value[2], Feature_value[3], Feature_value[4], Feature_value[5], Feature_value[6], Feature_value[7], Feature_value[8], Feature_value[9], Feature_value[10], Feature_value[11], Feature_value[12], Feature_value[13], Feature_value[14], Feature_value[15], Feature_value[16], Feature_value[17], Feature_value[18], Feature_value[19], Feature_value[20], Feature_value[21], Feature_value[22], Feature_value[23], Feature_value[24], Feature_value[25], Feature_value[26], Feature_value[27], Feature_value[28], Feature_value[29], Feature_value[30], Feature_value[31], Feature_value[32], Feature_value[33], Feature_value[34], Feature_value[35], Feature_value[36]);
                 }
-                
+
             }
             csv_file.Close();
+            Debug.WriteLine("解析終了");
         }
 
 
         //画像へのPathを引数として，画像の特徴量を抽出し，double配列に入れる．
-        public double [] for_SVM(string pngFileName)
+        public double[] for_SVM(string pngFileName)
         {
             double[] Feature_value = { 0 };//最終的に各特徴量を格納する配列．
 
             Mat frame = Cv2.ImRead(pngFileName);//Pathの画像ファイルを読み込み．
             int x, y;//画像の座標用変数
 
+            ///////////////////////////////////////////////////////////////////////////////
+            //////////////////////左半分，右半分，全体の順番でデータを取る．
+            ///////////////////////////////////////////////////////////////////////////////
+            for(int j = 0; j < 3; j++) {
+                int x_limit = 0; 
+                int x_start = frame.Cols / 2;
 
-            ///////////////////////////////////////////////////////////////////////////////
-            //////////////////////左半分
-            ///////////////////////////////////////////////////////////////////////////////
-            double[] array = { 0 };//各色味の値を入れる配列．
-            //左半分の画像に関しての特徴量
-            for (x = 0; x < frame.Cols / 2; x += 16)
-            {
-                for (y = 0; y < frame.Rows; y += 16)
+                if (j == 0)//左半分
                 {
-                    Vec3b px = frame.At<Vec3b>(y, x);
-                    Array.Resize(ref array, array.Length + 1);
-                    array[array.Length - 1] = px[1];
+                    x_start = 0;
+                    x_limit = frame.Cols/2;
                 }
-            }
-            double mean_left = array.Average();//色味の平均．
-            double sum = array.Select(a => a * a).Sum();
-            double variance_left = sum / array.Length - mean_left * mean_left;//色味の分散計算．
-            variance_left = Math.Sqrt(variance_left) / mean_left;//色味の分散計算．
-            double PSNR_left = Math.Log10(256 * 256 / variance_left);//ピーク信号対雑音比
-
-            int green_px_left = 0;
-            for (x = 0; x < frame.Cols / 2; x += 16)
-            {
-                for (y = 0; y < frame.Rows; y += 16)
+                if (j == 1)//右半分
                 {
-                    Vec3b px = frame.At<Vec3b>(y, x);
-                    if (mean_left > px[0])
+                    x_start = frame.Cols / 2;
+                    x_limit = frame.Cols;   
+                }
+                if (j == 2)//全体
+                {
+                    x_start = 0;
+                    x_limit = frame.Cols;
+                }
+
+                for (int i = 0; i < 3; i++)//三色，GBRの順番でデータを取る．
+                {
+                    double[] array = { 0 };//各色味の値を入れる配列．
+                    for (x = x_start; x < x_limit; x += 16)
                     {
-                        green_px_left++;
+                        for (y = 0; y < frame.Rows; y += 16)
+                        {
+                            Vec3b px = frame.At<Vec3b>(y, x);
+                            Array.Resize(ref array, array.Length + 1);
+                            array[array.Length - 1] = px[i];
+                        }
                     }
+                    double mean = array.Average();//色味の平均．
+                    double sum = array.Select(a => a * a).Sum();
+                    double variance = sum / array.Length - mean * mean;//色味の分散計算．
+                    variance = Math.Sqrt(variance) / mean;//色味の分散計算．
+                    double PSNR = Math.Log10(256 * 256 / variance);//ピーク信号対雑音比
 
-                }
-            }
-            double green_per_left = green_px_left * 256 * 100.0 * 2 / frame.Cols / frame.Rows;
-
-            ///////////////////////////////////////////////////////////////////////////////
-            //////////////////////右半分
-            ///////////////////////////////////////////////////////////////////////////////
-            double[] array2 = { 0 };//各色味の値を入れる配列．
-
-            //左半分の画像に関しての特徴量
-            for (x = 0; x < frame.Cols / 2; x += 16)
-            {
-                for (y = 0; y < frame.Rows; y += 16)
-                {
-                    Vec3b px = frame.At<Vec3b>(y, x);
-                    Array.Resize(ref array2, array2.Length + 1);
-                    array2[array2.Length - 1] = px[1];
-                }
-            }
-            double mean_right = array2.Average();//色味の平均．
-
-            double sum2 = array2.Select(a => a * a).Sum();
-            double variance_right = sum2 / array2.Length - mean_right * mean_right;
-            variance_right = Math.Sqrt(variance_right) / mean_right;//色味の分散計算．
-            double PSNR_right = Math.Log10(256 * 256 / variance_right);//ピーク信号対雑音比
-
-            int green_px_right = 0;
-            for (x = 0; x < frame.Cols / 2; x += 16)
-            {
-                for (y = 0; y < frame.Rows; y += 16)
-                {
-                    Vec3b px = frame.At<Vec3b>(y, x);
-                    if (mean_right > px[0])
+                    int color_px = 0;
+                    for (x = x_start; x < x_limit; x += 16)
                     {
-                        green_px_right++;
+                        for (y = 0; y < frame.Rows; y += 16)
+                        {
+                            Vec3b px = frame.At<Vec3b>(y, x);
+                            if (mean > px[i])
+                            {
+                                color_px++;
+                            }
+
+                        }
                     }
+                    double color_per = color_px * 256 * 100.0 * 2 / frame.Cols / frame.Rows;
+
+                    //戻る配列に対して値の代入,3領域×3色×4特徴量＝36種/////////////////////////////////////////
+                    Array.Resize(ref Feature_value, Feature_value.Length + 1);
+                    Feature_value[Feature_value.Length - 1] = mean;
+
+                    Array.Resize(ref Feature_value, Feature_value.Length + 1);
+                    Feature_value[Feature_value.Length - 1] = variance;
+
+                    Array.Resize(ref Feature_value, Feature_value.Length + 1);
+                    Feature_value[Feature_value.Length - 1] = PSNR;
+
+                    Array.Resize(ref Feature_value, Feature_value.Length + 1);
+                    Feature_value[Feature_value.Length - 1] = color_per;
 
                 }
             }
-            double green_per_right = green_px_right * 256 * 100.0 * 2 / frame.Cols / frame.Rows;
-
-            ///////////////////////////////////////////////////////////////////////////////
-            //////////////////////全体
-            ///////////////////////////////////////////////////////////////////////////////
-            double[] array0 = { 0 };//各色味の値を入れる配列．
-
-            //左半分の画像に関しての特徴量
-            for (x = 0; x < frame.Cols; x += 16)
-            {
-                for (y = 0; y < frame.Rows; y += 16)
-                {
-                    Vec3b px = frame.At<Vec3b>(y, x);
-                    Array.Resize(ref array0, array0.Length + 1);
-                    array0[array0.Length - 1] = px[1];
-                }
-            }
-            double mean_all = array0.Average();//色味の平均．
-            double sum0 = array0.Select(a => a * a).Sum();
-            double variance_all = sum0 / array0.Length - mean_all * mean_all;
-            variance_all = Math.Sqrt(variance_all) / mean_all;//色味の分散計算．
-            double PSNR_all = Math.Log10(256 * 256 / variance_all);//ピーク信号対雑音比
-
-            int green_px_all = 0;
-            for (x = 0; x < frame.Cols / 2; x += 16)
-            {
-                for (y = 0; y < frame.Rows; y += 16)
-                {
-                    Vec3b px = frame.At<Vec3b>(y, x);
-                    if (mean_all > px[0])
-                    {
-                        green_px_all++;
-                    }
-
-                }
-            }
-            double green_per_all = green_px_all * 256 * 100.0 * 2 / frame.Cols / frame.Rows;
-            ///////////////////////////////////////////////////////////////////////////////
-            //////////////////////代入
-            ///////////////////////////////////////////////////////////////////////////////
-            ///
-
-            ///画像全体に関する特徴量，色味平均，色味分散，色味PSNR,色味平均以上のピクセル割合
-            ///
-
-            //左半分/////////////////////////////////////////
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = mean_left;
-
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = variance_left;
-
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = PSNR_left;
-
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = green_per_left;
-
-
-            //右半分/////////////////////////////
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = mean_right;
-
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = variance_right;
-
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = PSNR_right;
-
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = green_per_right;
-
-
-            //全体/////////////////////////////////////////
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = mean_all;
-
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = variance_all;
-
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = PSNR_all;
-
-            Array.Resize(ref Feature_value, Feature_value.Length + 1);
-            Feature_value[Feature_value.Length - 1] = green_per_all;
-
             frame.Dispose();
-            
             return Feature_value;
         }
 
