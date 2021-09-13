@@ -7,16 +7,9 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-
-        <ScrollViewer Margin="10,10,52,50">
-            <StackPanel Width="708">
-                <Image x:Name="inference_image1" Height="263" Margin="10,4"/>
-                <Image x:Name="inference_image2" Height="269" Margin="10,4"/>
-                <Image x:Name="inference_image3" Height="269" Margin="10,4"/>
-                <Image x:Name="inference_image4" Height="269" Margin="10,4"/>
-                <Image x:Name="inference_image5" Height="269" Margin="10,4"/>
-            </StackPanel>
-        </ScrollViewer>
-        <Image x:Name="inference_image" Stretch="Uniform" Height="180" Width="474" />
+        <StackPanel HorizontalAlignment="Left">
+            <Button x:Name="kaiseki"  Height="58" Width="133" Content="解析" Click="Button_Click_kaiseki"/>
+        </StackPanel>
+        <TextBox x:Name="ViewSearchState" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Center" Margin="138,0,319,0" Text="解析状況" TextWrapping="Wrap" VerticalAlignment="Top" Width="335" Height="419" FontSize="20"/>
     </Grid>
 </Window>

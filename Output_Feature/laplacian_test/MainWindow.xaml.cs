@@ -42,12 +42,19 @@ namespace laplacian_test
 
         public MainWindow()
         {
+            //isback_forSVM();
+        }
+
+        private void Button_Click_kaiseki(object sender, RoutedEventArgs e)
+        {
+            ViewSearchState.AppendText("\n解析開始");
             isback_forSVM();
         }
 
         //SVM解析用の画像特徴量をクラスラベル，特徴量1,特徴量2の順でcsvに入れるコード．
         public void isback_forSVM()
         {
+            
             string path = "D:/grameye/背景判定用/isgoodbackground_kaiseki/";
             //Yamaoka_PCでの画像ファイルを入れる場所のPath,ディレクトリ構造
             //isgoodbackground_kaiseki
@@ -82,6 +89,8 @@ namespace laplacian_test
                 string[] files = System.IO.Directory.GetFiles(folder, "*.png", System.IO.SearchOption.AllDirectories);//各フォルダの全画像にアクセス．
                 foreach (String file in files)
                 {
+                    ViewSearchState.AppendText("\n" + file);
+
                     double[] Feature_value = for_SVM(file);
 
                     //Array.Resize(ref Feature_value, Feature_value.Length + 1);
@@ -139,6 +148,7 @@ namespace laplacian_test
                 }
             }
             double green_per_left = green_px_left * 256 * 100.0 * 2 / frame.Cols / frame.Rows;
+
             ///////////////////////////////////////////////////////////////////////////////
             //////////////////////右半分
             ///////////////////////////////////////////////////////////////////////////////
@@ -175,6 +185,7 @@ namespace laplacian_test
                 }
             }
             double green_per_right = green_px_right * 256 * 100.0 * 2 / frame.Cols / frame.Rows;
+
             ///////////////////////////////////////////////////////////////////////////////
             //////////////////////全体
             ///////////////////////////////////////////////////////////////////////////////
