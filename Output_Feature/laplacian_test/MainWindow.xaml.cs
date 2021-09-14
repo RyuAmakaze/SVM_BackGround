@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 
+using System.Windows.Forms;
+
 
 namespace laplacian_test
 {
@@ -30,19 +32,54 @@ namespace laplacian_test
         public MainWindow()
         {
             //isback_forSVM();
+            //judge_bySVM();
         }
 
         private void Button_Click_kaiseki(object sender, RoutedEventArgs e)
         {
             ViewSearchState.AppendText("\n解析開始");
-            isback_forSVM();
+            //judge_bySVM();
+            //sisback_forSVM();
+        }
+
+        public bool judge_bySVM(double[] feature)
+        {
+            string SVM_cof = "SVM/SVM12_coefficient.csv";
+            string SVM_thresh = "SVM/SVM12_intercept.csv";
+
+            StreamReader sr = new StreamReader(@SVM_cof);
+            string[] feature_cof = sr.ReadLine().Split(',');
+
+            StreamReader sr2 = new StreamReader(@SVM_thresh);
+            string[] thresh = sr2.ReadLine().Split(',');
+
+            double calculate = 0;
+
+            if (feature_cof.Length != feature.Length)
+            {
+                MessageBox.Show("SVMの係数の数と、入力された特徴量の数が異なります。特徴量の数をチェック！");
+            }
+
+            for(int i = 0; i < feature.Length; i++)
+            {
+                calculate = calculate + feature[i]*double.Parse(feature_cof[i]);
+            }
+
+            if(Math.Abs(calculate) <= Math.Abs(double.Parse(thresh[0])))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         //SVM解析用の画像特徴量をクラスラベル，特徴量1,特徴量2の順でcsvに入れるコード．
         public void isback_forSVM()
         {
 
-            string path = "D:/grameye/背景判定用/isgoodbackground_kaiseki/";
+            string path = "D:/gramEye/isgoodbackground_kaiseki/";
             //Yamaoka_PCでの画像ファイルを入れる場所のPath,ディレクトリ構造
             //isgoodbackground_kaiseki
             //          +-----goodbackground
@@ -53,11 +90,11 @@ namespace laplacian_test
             string[] folders = System.IO.Directory.GetDirectories(path, "*", System.IO.SearchOption.AllDirectories);
 
             //SVM用の特徴量を格納するcsv
-            StreamWriter csv_file = new StreamWriter(path + "/Feature_SVM.csv", false, Encoding.UTF8);
+            StreamWriter csv_file = new StreamWriter(path + "/Feature_SVM7.csv", false, Encoding.UTF8);
 
             foreach (String folder in folders)
             {
-                //良い背景はクラス0，濃すぎるは1，薄すぎる背景は-1
+                //良い背景はクラス0，濃すぎるは1，薄すぎる背景は-1, もしくはダメな背景は1
                 int class_label = 2;
                 Debug.WriteLine(folder);
                 if (folder == path + "goodbackground")
@@ -86,9 +123,15 @@ namespace laplacian_test
                     //Feature_value[Feature_value.Length - 1] = class_label;
 
                     //csv_file.WriteLine(Feature_value);
+                    
                     //後日書き直し．
-                    csv_file.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25},{26},{27},{28},{29},{30},{31},{32},{33},{34},{35},{36}", class_label, Feature_value[1], Feature_value[2], Feature_value[3], Feature_value[4], Feature_value[5], Feature_value[6], Feature_value[7], Feature_value[8], Feature_value[9], Feature_value[10], Feature_value[11], Feature_value[12], Feature_value[13], Feature_value[14], Feature_value[15], Feature_value[16], Feature_value[17], Feature_value[18], Feature_value[19], Feature_value[20], Feature_value[21], Feature_value[22], Feature_value[23], Feature_value[24], Feature_value[25], Feature_value[26], Feature_value[27], Feature_value[28], Feature_value[29], Feature_value[30], Feature_value[31], Feature_value[32], Feature_value[33], Feature_value[34], Feature_value[35], Feature_value[36]);
+                    //36種類ver
+                    //csv_file.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25},{26},{27},{28},{29},{30},{31},{32},{33},{34},{35},{36}", class_label, Feature_value[1], Feature_value[2], Feature_value[3], Feature_value[4], Feature_value[5], Feature_value[6], Feature_value[7], Feature_value[8], Feature_value[9], Feature_value[10], Feature_value[11], Feature_value[12], Feature_value[13], Feature_value[14], Feature_value[15], Feature_value[16], Feature_value[17], Feature_value[18], Feature_value[19], Feature_value[20], Feature_value[21], Feature_value[22], Feature_value[23], Feature_value[24], Feature_value[25], Feature_value[26], Feature_value[27], Feature_value[28], Feature_value[29], Feature_value[30], Feature_value[31], Feature_value[32], Feature_value[33], Feature_value[34], Feature_value[35], Feature_value[36]);
+                    
+                    //12種ver
+                    csv_file.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}", class_label, Feature_value[1], Feature_value[2], Feature_value[3], Feature_value[4], Feature_value[5], Feature_value[6], Feature_value[7], Feature_value[8], Feature_value[9], Feature_value[10], Feature_value[11], Feature_value[12]);                
                 }
+
 
             }
             csv_file.Close();
@@ -103,11 +146,13 @@ namespace laplacian_test
 
             Mat frame = Cv2.ImRead(pngFileName);//Pathの画像ファイルを読み込み．
             int x, y;//画像の座標用変数
+            int area = 3;//解析する領域数
+            int color = 1;//解析する色の数
 
             ///////////////////////////////////////////////////////////////////////////////
             //////////////////////左半分，右半分，全体の順番でデータを取る．
             ///////////////////////////////////////////////////////////////////////////////
-            for(int j = 0; j < 3; j++) {
+            for(int j = 0; j < area; j++) {
                 int x_limit = 0; 
                 int x_start = frame.Cols / 2;
 
@@ -127,7 +172,7 @@ namespace laplacian_test
                     x_limit = frame.Cols;
                 }
 
-                for (int i = 0; i < 3; i++)//三色，GBRの順番でデータを取る．
+                for (int i = 0; i < color; i++)//三色，GBRの順番でデータを取る．
                 {
                     double[] array = { 0 };//各色味の値を入れる配列．
                     for (x = x_start; x < x_limit; x += 16)
